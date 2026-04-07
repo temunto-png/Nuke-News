@@ -36,7 +36,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await client.v2.tweet(text);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "Twitter API error", detail: message }, { status: 502 });
+    const data = (err as Record<string, unknown>).data ?? null;
+    const errors = (err as Record<string, unknown>).errors ?? null;
+    return NextResponse.json({ error: "Twitter API error", detail: message, data, errors }, { status: 502 });
   }
 
   return NextResponse.json({ ok: true });
