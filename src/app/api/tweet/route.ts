@@ -4,7 +4,7 @@ import { TwitterApi } from "twitter-api-v2";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const secret = process.env.TWEET_SECRET;
+  const secret = process.env.TWEET_SECRET?.trim();
   const auth = request.headers.get("Authorization");
 
   if (!secret || auth !== `Bearer ${secret}`) {

@@ -15,7 +15,7 @@ function buildTweet(data: DailyData, siteUrl: string): string {
 }
 
 export async function postDailyTweet(data: DailyData): Promise<void> {
-  const tweetSecret = process.env.TWEET_SECRET;
+  const tweetSecret = process.env.TWEET_SECRET?.trim();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nukenews.vercel.app";
 
   if (!tweetSecret) {
