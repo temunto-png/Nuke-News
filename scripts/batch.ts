@@ -47,8 +47,15 @@ export async function runBatch(date = getJstDateString()): Promise<DailyData> {
   await writeJson(path.join(dataDir, `${date}.json`), data);
   await writeJson(path.join(dataDir, "latest.json"), data);
 
+  const SIDE_EFFECT_NAMES = ["deploy", "twitter"];
   const sideEffects = await Promise.allSettled([triggerDeploy(), postDailyTweet(data)]);
   const failures = sideEffects.filter((result) => result.status === "rejected");
+
+  for (const [i, result] of sideEffects.entries()) {
+    if (result.status === "rejected") {
+      console.warn(`Side effect [${SIDE_EFFECT_NAMES[i]}] failed:`, (result as PromiseRejectedResult).reason);
+    }
+  }
 
   if (failures.length === sideEffects.length) {
     throw new Error(

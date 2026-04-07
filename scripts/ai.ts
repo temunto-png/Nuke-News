@@ -82,13 +82,17 @@ export async function selectAndGenerateItems(
   const knownTitles = new Set(articles.map((article) => cleanText(article.title)));
 
   try {
+    const PREFILL = '{"selected":[';
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2048,
-      messages: [{ role: "user", content: buildPrompt(articles) }],
+      messages: [
+        { role: "user", content: buildPrompt(articles) },
+        { role: "assistant", content: PREFILL },
+      ],
     });
 
-    const text = extractTextBlocks(response.content);
+    const text = PREFILL + extractTextBlocks(response.content);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {

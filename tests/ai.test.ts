@@ -56,10 +56,12 @@ const mockAiResponse = {
 describe("selectAndGenerateItems", () => {
   it("5件の選定結果を返す", async () => {
     const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    // prefill '{"selected":[' をコードが付加するため、モックは続き部分だけ返す
+    const PREFILL_LEN = '{"selected":['.length;
     (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       messages: {
         create: vi.fn().mockResolvedValue({
-          content: [{ type: "text", text: JSON.stringify(mockAiResponse) }],
+          content: [{ type: "text", text: JSON.stringify(mockAiResponse).slice(PREFILL_LEN) }],
         }),
       },
     }));
@@ -90,6 +92,7 @@ describe("selectAndGenerateItems", () => {
 
   it("AIが存在しないニュースタイトルを返した場合は除外して補完する", async () => {
     const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    const PREFILL_LEN = '{"selected":['.length;
     (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       messages: {
         create: vi.fn().mockResolvedValue({
@@ -106,7 +109,7 @@ describe("selectAndGenerateItems", () => {
                   },
                   mockAiResponse.selected[0],
                 ],
-              }),
+              }).slice(PREFILL_LEN),
             },
           ],
         }),
