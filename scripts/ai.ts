@@ -95,7 +95,14 @@ export async function selectAndGenerateItems(
       throw new Error(`AIレスポンスのJSON解析失敗: ${text.slice(0, 120)}`);
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as { selected?: AiSelectedItem[] };
+    const sanitized = jsonMatch[0].replace(
+      /"(?:[^"\\]|\\.)*"/g,
+      (match) => match.replace(/[\x00-\x1F\x7F]/g, (c) => {
+        const escapes: Record<string, string> = { "\n": "\\n", "\r": "\\r", "\t": "\\t", "\b": "\\b", "\f": "\\f" };
+        return escapes[c] ?? `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`;
+      })
+    );
+    const parsed = JSON.parse(sanitized) as { selected?: AiSelectedItem[] };
 
     if (!Array.isArray(parsed.selected) || parsed.selected.length === 0) {
       throw new Error("AIが選定結果を返しませんでした");
