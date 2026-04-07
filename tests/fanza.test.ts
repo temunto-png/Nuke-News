@@ -22,7 +22,7 @@ describe("fetchFanzaProduct", () => {
                   title: "作品タイトル",
                   affiliateURL: "https://example.com/single",
                   imageURL: {
-                    large: "https://example.com/thumb.jpg",
+                    large: "https://pics.dmm.co.jp/thumb.jpg",
                   },
                 },
               },
@@ -35,7 +35,7 @@ describe("fetchFanzaProduct", () => {
     const product = await fetchFanzaProduct("熟女", "2026-04-07-item1");
 
     expect(product.title).toBe("作品タイトル");
-    expect(product.thumbnailUrl).toBe("https://example.com/thumb.jpg");
+    expect(product.thumbnailUrl).toBe("https://pics.dmm.co.jp/thumb.jpg");
     expect(product.affiliateUrlSingle).toContain("utm_campaign=2026-04-07-item1-single");
     expect(product.affiliateUrlMonthly).toContain("utm_campaign=2026-04-07-item1-monthly");
   });

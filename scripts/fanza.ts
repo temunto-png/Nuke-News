@@ -20,6 +20,16 @@ interface FanzaApiResponse {
 
 const API_ENDPOINT = "https://api.dmm.com/affiliate/v3/ItemList";
 const FALLBACK_THUMBNAIL = "/fallback-thumb.png";
+const ALLOWED_THUMBNAIL_HOSTNAMES = /^([a-z0-9-]+\.)*dmm\.(co\.jp|com)$/;
+
+function isSafeThumbnailUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && ALLOWED_THUMBNAIL_HOSTNAMES.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
 
 function appendTrackingParams(url: string, campaign: string, ctaType: "single" | "monthly") {
   try {
@@ -105,8 +115,10 @@ export async function fetchFanzaProduct(
 
     return {
       title: picked.title ?? `${genreKeyword} のおすすめ作品`,
-      thumbnailUrl:
-        picked.imageURL?.large ?? picked.imageURL?.list ?? picked.imageURL?.small ?? FALLBACK_THUMBNAIL,
+      thumbnailUrl: (() => {
+        const url = picked.imageURL?.large ?? picked.imageURL?.list ?? picked.imageURL?.small;
+        return url && isSafeThumbnailUrl(url) ? url : FALLBACK_THUMBNAIL;
+      })(),
       affiliateUrlSingle: appendTrackingParams(picked.affiliateURL, campaign, "single"),
       affiliateUrlMonthly: appendTrackingParams(monthlyBase, campaign, "monthly"),
     };

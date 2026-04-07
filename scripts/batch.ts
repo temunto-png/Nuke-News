@@ -50,7 +50,7 @@ export async function runBatch(date = getJstDateString()): Promise<DailyData> {
   const sideEffects = await Promise.allSettled([triggerDeploy(), postDailyTweet(data)]);
   const failures = sideEffects.filter((result) => result.status === "rejected");
 
-  if (failures.length > 0) {
+  if (failures.length === sideEffects.length) {
     throw new Error(
       `Batch side effect failed: ${failures
         .map((result) => String((result as PromiseRejectedResult).reason))

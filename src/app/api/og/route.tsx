@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
         }}
       >
         {item?.product.thumbnailUrl && isSafeThumbnailUrl(item.product.thumbnailUrl) ? (
+          // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
           <img
             src={item.product.thumbnailUrl}
             style={{
