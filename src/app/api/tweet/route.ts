@@ -22,17 +22,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
-  const appKey = process.env.TWITTER_API_KEY;
-  const appSecret = process.env.TWITTER_API_SECRET;
-  const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-  const accessSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
+  const appKey = process.env.TWITTER_API_KEY?.trim();
+  const appSecret = process.env.TWITTER_API_SECRET?.trim();
+  const accessToken = process.env.TWITTER_ACCESS_TOKEN?.trim();
+  const accessSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET?.trim();
 
   if (!appKey || !appSecret || !accessToken || !accessSecret) {
     return NextResponse.json({ error: "Twitter credentials not configured" }, { status: 500 });
   }
 
-  const client = new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
-  await client.v2.tweet(text);
+  try {
+    const client = new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
+    await client.v2.tweet(text);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: "Twitter API error", detail: message }, { status: 502 });
+  }
 
   return NextResponse.json({ ok: true });
 }
