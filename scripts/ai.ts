@@ -51,24 +51,13 @@ function buildPrompt(articles: RawArticle[]): string {
   return `あなたはユーモラスなWebコンテンツキュレーターです。以下のニュース記事リストを分析し、AVジャンルと最も面白い接続が作れる5件を選んでください。
 
 ルール:
-- ニュースタイトルは元の文言をそのまま使う
+- newsTitle はニュースタイトルの元の文言をそのまま使う
 - genreKeyword は FANZA で検索しやすい日本語キーワードを1〜2語にする
 - reason は自然な日本語で1〜2文、やや笑えるトーンにする
 - shareText には作品名もジャンル名も入れない
-- JSON以外の説明文は一切返さない
-
-以下の JSON 形式のみで返答してください:
-{"selected":[{"newsTitle":"...","genreKeyword":"...","reason":"...","shareText":"..."}]}
 
 ニュース記事リスト:
 ${articleList}`;
-}
-
-function extractTextBlocks(content: Anthropic.Messages.Message["content"]): string {
-  return content
-    .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
-    .map((block) => block.text)
-    .join("");
 }
 
 export async function selectAndGenerateItems(
@@ -82,31 +71,45 @@ export async function selectAndGenerateItems(
   const knownTitles = new Set(articles.map((article) => cleanText(article.title)));
 
   try {
-    const PREFILL = '{"selected":[';
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 2048,
-      messages: [
-        { role: "user", content: buildPrompt(articles) },
-        { role: "assistant", content: PREFILL },
+      tools: [
+        {
+          name: "select_news_items",
+          description: "ニュース記事からAVジャンルと関連付けるアイテムを5件選定して返す",
+          input_schema: {
+            type: "object" as const,
+            properties: {
+              selected: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    newsTitle: { type: "string" },
+                    genreKeyword: { type: "string" },
+                    reason: { type: "string" },
+                    shareText: { type: "string" },
+                  },
+                  required: ["newsTitle", "genreKeyword", "reason", "shareText"],
+                },
+              },
+            },
+            required: ["selected"],
+          },
+        },
       ],
+      tool_choice: { type: "tool", name: "select_news_items" },
+      messages: [{ role: "user", content: buildPrompt(articles) }],
     });
 
-    const text = PREFILL + extractTextBlocks(response.content);
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-
-    if (!jsonMatch) {
-      throw new Error(`AIレスポンスのJSON解析失敗: ${text.slice(0, 120)}`);
-    }
-
-    const sanitized = jsonMatch[0].replace(
-      /"(?:[^"\\]|\\.)*"/g,
-      (match) => match.replace(/[\x00-\x1F\x7F]/g, (c) => {
-        const escapes: Record<string, string> = { "\n": "\\n", "\r": "\\r", "\t": "\\t", "\b": "\\b", "\f": "\\f" };
-        return escapes[c] ?? `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`;
-      })
+    const toolUseBlock = response.content.find(
+      (block): block is Extract<typeof block, { type: "tool_use" }> => block.type === "tool_use"
     );
-    const parsed = JSON.parse(sanitized) as { selected?: AiSelectedItem[] };
+    if (!toolUseBlock) {
+      throw new Error("tool_use ブロックが返されませんでした");
+    }
+    const parsed = toolUseBlock.input as { selected?: AiSelectedItem[] };
 
     if (!Array.isArray(parsed.selected) || parsed.selected.length === 0) {
       throw new Error("AIが選定結果を返しませんでした");
