@@ -4,8 +4,8 @@ import type { AiSelectedItem, RawArticle } from "./types";
 const MODEL = "claude-haiku-4-5-20251001";
 const TARGET_ITEMS = 5;
 
-function cleanText(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+function cleanText(value: string | undefined): string {
+  return (value ?? "").replace(/\s+/g, " ").trim();
 }
 
 function inferGenreKeyword(article: RawArticle): string {
