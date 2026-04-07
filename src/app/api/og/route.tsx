@@ -4,6 +4,17 @@ import { loadDailyData } from "../../lib/data";
 
 export const runtime = "nodejs";
 
+const ALLOWED_THUMBNAIL_HOSTNAMES = /^([a-z0-9-]+\.)*dmm\.(co\.jp|com)$/;
+
+function isSafeThumbnailUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && ALLOWED_THUMBNAIL_HOSTNAMES.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date") ?? "";
@@ -28,7 +39,7 @@ export async function GET(request: NextRequest) {
           fontFamily: "sans-serif",
         }}
       >
-        {item?.product.thumbnailUrl ? (
+        {item?.product.thumbnailUrl && isSafeThumbnailUrl(item.product.thumbnailUrl) ? (
           <img
             src={item.product.thumbnailUrl}
             style={{

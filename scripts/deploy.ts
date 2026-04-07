@@ -6,7 +6,10 @@ export async function triggerDeploy(): Promise<void> {
     return;
   }
 
-  const response = await fetch(deployHookUrl, { method: "POST" });
+  const response = await fetch(deployHookUrl, {
+    method: "POST",
+    signal: AbortSignal.timeout(10000),
+  });
 
   if (!response.ok) {
     throw new Error(`Deploy hook failed: ${response.status}`);

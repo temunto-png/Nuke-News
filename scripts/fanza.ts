@@ -21,12 +21,6 @@ interface FanzaApiResponse {
 const API_ENDPOINT = "https://api.dmm.com/affiliate/v3/ItemList";
 const FALLBACK_THUMBNAIL = "/fallback-thumb.png";
 
-function createTimeoutSignal(timeoutMs: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), timeoutMs);
-  return controller.signal;
-}
-
 function appendTrackingParams(url: string, campaign: string, ctaType: "single" | "monthly") {
   try {
     const parsed = new URL(url);
@@ -79,7 +73,7 @@ async function requestItems(keyword: string, sort: "date" | "rankprofile") {
   });
 
   const response = await fetch(`${API_ENDPOINT}?${params.toString()}`, {
-    signal: createTimeoutSignal(8000),
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!response.ok) {

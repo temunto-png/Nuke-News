@@ -10,12 +10,6 @@ const RSS_SOURCES = [
 const MAX_ARTICLES = 50;
 const REQUEST_TIMEOUT_MS = 8000;
 
-function createTimeoutSignal(timeoutMs: number): AbortSignal {
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), timeoutMs);
-  return controller.signal;
-}
-
 export async function fetchArticles(): Promise<RawArticle[]> {
   const parser = new Parser();
   const results: RawArticle[] = [];
@@ -24,7 +18,7 @@ export async function fetchArticles(): Promise<RawArticle[]> {
   for (const url of RSS_SOURCES) {
     try {
       const response = await fetch(url, {
-        signal: createTimeoutSignal(REQUEST_TIMEOUT_MS),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (!response.ok) {

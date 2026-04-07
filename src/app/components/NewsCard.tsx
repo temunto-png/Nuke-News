@@ -1,4 +1,5 @@
-﻿import React from "react";
+﻿import Image from "next/image";
+import React from "react";
 import type { DailyItem } from "../../../scripts/types";
 
 interface NewsCardProps {
@@ -32,11 +33,13 @@ export function NewsCard({ item, date }: NewsCardProps) {
       </div>
 
       <div className="p-5">
-        <div className="overflow-hidden rounded-2xl bg-slate-100">
-          <img
+        <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-100">
+          <Image
             src={thumbnailUrl}
             alt={item.product.title}
-            className="aspect-video h-auto w-full object-cover"
+            fill
+            className="object-cover"
+            unoptimized={thumbnailUrl.startsWith("/")}
           />
         </div>
 
