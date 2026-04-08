@@ -40,7 +40,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const message = err instanceof Error ? err.message : String(err);
     const data = (err as Record<string, unknown>).data ?? null;
     const errors = (err as Record<string, unknown>).errors ?? null;
-    return NextResponse.json({ error: "Twitter API error", detail: message, data, errors }, { status: 502 });
+    return NextResponse.json({ error: "Twitter API error", detail: message, data, errors, textLen: text.length }, { status: 502 });
   }
 
   return NextResponse.json({ ok: true });
