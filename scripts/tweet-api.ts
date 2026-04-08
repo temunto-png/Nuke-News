@@ -1,69 +1,20 @@
 import type { DailyData } from "./types";
 
-const MAX_TWEET_LENGTH = 280;
-const SHORT_URL_LENGTH = 23;
-const MAX_TITLE_LENGTH = 38;
-const ELLIPSIS = "…";
-
-function truncateText(value: string, maxLength: number): string {
-  const chars = Array.from(value.trim());
-  if (chars.length <= maxLength) {
-    return value.trim();
-  }
-
-  return `${chars.slice(0, Math.max(0, maxLength - 1)).join("")}${ELLIPSIS}`;
-}
-
-function getWeightedTweetLength(text: string): number {
-  return text.split(/(https?:\/\/\S+)/g).reduce((total, part) => {
-    if (/^https?:\/\/\S+$/.test(part)) {
-      return total + SHORT_URL_LENGTH;
-    }
-
-    return total + Array.from(part).length;
-  }, 0);
-}
-
 export function buildTweet(data: DailyData, siteUrl: string): string {
   const normalizedSiteUrl = siteUrl.replace(/\/+$/, "");
-  const intro = "【本日の5本 📰→🔞】";
-  const prompt = "それぞれどのジャンルになったか、想像できる？👇";
   const pageUrl = `${normalizedSiteUrl}/${data.date}`;
-  const hashtag = "#ヌケニュース";
-  const lines: string[] = [];
-
-  for (const [index, item] of data.items.entries()) {
-    const candidateLine = ` ${index + 1}.「${truncateText(item.shareText, MAX_TITLE_LENGTH)}」`;
-    const candidateTweet = [
-      intro,
-      "",
-      ...lines,
-      candidateLine,
-      "",
-      prompt,
-      pageUrl,
-      "",
-      hashtag,
-    ].join("\n");
-
-    if (getWeightedTweetLength(candidateTweet) > MAX_TWEET_LENGTH) {
-      break;
-    }
-
-    lines.push(candidateLine);
-  }
-
-  const finalLines = lines.length > 0 ? lines : [` 1.「${truncateText(data.items[0]?.shareText ?? "今日のニュース", 24)}」`];
 
   return [
-    intro,
+    "【本日の5本 📰→🔞】",
     "",
-    ...finalLines,
+    "今日のニュース5本、",
+    "どんなジャンルに変換されたか",
+    "もう確認した？",
     "",
-    prompt,
+    "想像してから見るのがオススメ👇",
     pageUrl,
     "",
-    hashtag,
+    "#ヌケニュース",
   ].join("\n");
 }
 
