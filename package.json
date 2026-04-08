@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "batch": "tsx scripts/batch.ts",
-    "typecheck": "tsc --noEmit"
+    "tweet": "tsx scripts/post-latest-tweet.ts",
+    "wait:publish": "tsx scripts/wait-for-publication.ts",
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.63.0",

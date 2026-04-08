@@ -25,7 +25,7 @@ vi.mock("../scripts/deploy", () => ({
   triggerDeploy: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../scripts/twitter", () => ({
+vi.mock("../scripts/tweet-api", () => ({
   postDailyTweet: vi.fn().mockResolvedValue(undefined),
 }));
 

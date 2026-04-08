@@ -4,7 +4,7 @@ import { selectAndGenerateItems } from "./ai";
 import { triggerDeploy } from "./deploy";
 import { fetchFanzaProduct } from "./fanza";
 import { fetchArticles } from "./rss";
-import { postDailyTweet } from "./twitter";
+import { postDailyTweet } from "./tweet-api";
 import type { DailyData, DailyItem } from "./types";
 
 export function getJstDateString(now = new Date()) {
@@ -19,6 +19,11 @@ export function getJstDateString(now = new Date()) {
 async function writeJson(filePath: string, data: DailyData) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+function isEnvFlagEnabled(name: string): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
 }
 
 export async function runBatch(date = getJstDateString()): Promise<DailyData> {
@@ -47,13 +52,21 @@ export async function runBatch(date = getJstDateString()): Promise<DailyData> {
   await writeJson(path.join(dataDir, `${date}.json`), data);
   await writeJson(path.join(dataDir, "latest.json"), data);
 
-  const SIDE_EFFECT_NAMES = ["deploy", "twitter"];
-  const sideEffects = await Promise.allSettled([triggerDeploy(), postDailyTweet(data)]);
+  const sideEffectEntries = [
+    !isEnvFlagEnabled("SKIP_DEPLOY_HOOK") ? { name: "deploy", run: () => triggerDeploy() } : null,
+    !isEnvFlagEnabled("SKIP_TWEET") ? { name: "twitter", run: () => postDailyTweet(data) } : null,
+  ].filter((entry): entry is { name: string; run: () => Promise<void> } => entry !== null);
+
+  if (sideEffectEntries.length === 0) {
+    return data;
+  }
+
+  const sideEffects = await Promise.allSettled(sideEffectEntries.map((entry) => entry.run()));
   const failures = sideEffects.filter((result) => result.status === "rejected");
 
   for (const [i, result] of sideEffects.entries()) {
     if (result.status === "rejected") {
-      console.warn(`Side effect [${SIDE_EFFECT_NAMES[i]}] failed:`, (result as PromiseRejectedResult).reason);
+      console.warn(`Side effect [${sideEffectEntries[i].name}] failed:`, (result as PromiseRejectedResult).reason);
     }
   }
 

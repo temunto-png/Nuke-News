@@ -6,13 +6,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   batch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -27,7 +29,35 @@ jobs:
           FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
           FANZA_AFFILIATE_ID: ${{ secrets.FANZA_AFFILIATE_ID }}
           FANZA_MONTHLY_AFFILIATE_URL: ${{ secrets.FANZA_MONTHLY_AFFILIATE_URL }}
-          TWEET_SECRET: ${{ secrets.TWEET_SECRET }}
-          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+          SKIP_DEPLOY_HOOK: "1"
+          SKIP_TWEET: "1"
+          TZ: Asia/Tokyo
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
 
+      - name: Commit generated data
+        id: commit_data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --short -- data)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git add data
+          git commit -m "chore: update daily data"
+          git push origin HEAD:${GITHUB_REF_NAME}
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for published page
+        if: steps.commit_data.outputs.changed == 'true'
+        run: npm run wait:publish
+        env:
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          TZ: Asia/Tokyo
+
+      - name: Post daily tweet
+        if: steps.commit_data.outputs.changed == 'true'
+        run: npm run tweet
+        env:
+          TWEET_SECRET: ${{ secrets.TWEET_SECRET }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}

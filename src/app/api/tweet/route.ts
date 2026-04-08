@@ -37,10 +37,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const client = new TwitterApi({ appKey, appSecret, accessToken, accessSecret });
     await client.v2.tweet(text);
   } catch (err) {
+    const error = err as {
+      code?: number;
+      data?: unknown;
+      errors?: unknown;
+    };
     const message = err instanceof Error ? err.message : String(err);
-    const data = (err as Record<string, unknown>).data ?? null;
-    const errors = (err as Record<string, unknown>).errors ?? null;
-    return NextResponse.json({ error: "Twitter API error", detail: message, data, errors, textLen: text.length }, { status: 502 });
+    const data = error.data ?? null;
+    const errors = error.errors ?? null;
+    const upstreamStatus =
+      typeof error.code === "number" && error.code >= 400 && error.code <= 599 ? error.code : 502;
+
+    console.error("[tweet] Twitter API error", {
+      upstreamStatus,
+      detail: message,
+      data,
+      errors,
+      textLen: text.length,
+    });
+
+    return NextResponse.json(
+      { error: "Twitter API error", detail: message, data, errors, textLen: text.length, textSample: text.slice(0, 280), upstreamStatus },
+      { status: upstreamStatus },
+    );
   }
 
   return NextResponse.json({ ok: true });
