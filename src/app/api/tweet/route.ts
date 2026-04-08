@@ -22,6 +22,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
+  console.log("[tweet] text preview:", text.slice(0, 120));
+
   const appKey = process.env.TWITTER_API_KEY?.trim();
   const appSecret = process.env.TWITTER_API_SECRET?.trim();
   const accessToken = process.env.TWITTER_ACCESS_TOKEN?.trim();
