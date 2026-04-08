@@ -2,16 +2,16 @@ import { describe, expect, it } from "vitest";
 import { buildTweet } from "../scripts/tweet-api";
 import type { DailyData } from "../scripts/types";
 
-const longTitle = "とても長いニュースタイトル".repeat(8);
+const longShareText = "このニュースで何を想像した？正解はサイトで確認".repeat(3);
 
 const data: DailyData = {
   date: "2026-04-08",
   items: Array.from({ length: 5 }, (_, index) => ({
     id: index + 1,
-    newsTitle: `${longTitle}${index}`,
+    newsTitle: `ニュースタイトル${index}`,
     genre: "人妻",
     reason: "理由",
-    shareText: "共有文",
+    shareText: `${longShareText}${index}`,
     product: {
       title: "作品名",
       thumbnailUrl: "/fallback-thumb.png",

@@ -33,7 +33,7 @@ export function buildTweet(data: DailyData, siteUrl: string): string {
   const lines: string[] = [];
 
   for (const [index, item] of data.items.entries()) {
-    const candidateLine = ` ${index + 1}.「${truncateText(item.newsTitle, MAX_TITLE_LENGTH)}」`;
+    const candidateLine = ` ${index + 1}.「${truncateText(item.shareText, MAX_TITLE_LENGTH)}」`;
     const candidateTweet = [
       intro,
       "",
@@ -53,7 +53,7 @@ export function buildTweet(data: DailyData, siteUrl: string): string {
     lines.push(candidateLine);
   }
 
-  const finalLines = lines.length > 0 ? lines : [` 1.「${truncateText(data.items[0]?.newsTitle ?? "今日のニュース", 24)}」`];
+  const finalLines = lines.length > 0 ? lines : [` 1.「${truncateText(data.items[0]?.shareText ?? "今日のニュース", 24)}」`];
 
   return [
     intro,
