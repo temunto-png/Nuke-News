@@ -15,6 +15,7 @@ const data: DailyData = {
       thumbnailUrl: "/fallback-thumb.png",
       affiliateUrlSingle: "https://example.com/single",
       affiliateUrlMonthly: "https://example.com/monthly",
+      isFallback: false,
     },
   })),
 };

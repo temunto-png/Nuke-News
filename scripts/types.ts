@@ -17,6 +17,7 @@ export interface FanzaProduct {
   thumbnailUrl: string;
   affiliateUrlSingle: string;
   affiliateUrlMonthly: string;
+  isFallback: boolean;
 }
 
 export interface DailyItem {

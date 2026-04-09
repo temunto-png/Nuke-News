@@ -77,5 +77,48 @@ describe("fetchFanzaProduct", () => {
 
     expect(product.title).toBe("熟女 のおすすめ作品");
     expect(product.thumbnailUrl).toBe("/fallback-thumb.png");
+    expect(product.isFallback).toBe(true);
+    expect(product.affiliateUrlMonthly).not.toBe("");
+  });
+
+  it("API成功時は isFallback: false を返す", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          result: {
+            items: [
+              {
+                iteminfo: {
+                  title: "作品タイトル",
+                  affiliateURL: "https://example.com/single",
+                  imageURL: { large: "https://pics.dmm.co.jp/thumb.jpg" },
+                },
+              },
+            ],
+          },
+        }),
+      }),
+    );
+
+    const product = await fetchFanzaProduct("熟女", "2026-04-07-item1");
+    expect(product.isFallback).toBe(false);
+  });
+
+  it("API失敗時は isFallback: true を返す", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+
+    const product = await fetchFanzaProduct("熟女", "2026-04-07-item1");
+    expect(product.isFallback).toBe(true);
+  });
+
+  it("FANZA_MONTHLY_AFFILIATE_URL が空文字の場合もフォールバックURLが空にならない", async () => {
+    process.env.FANZA_MONTHLY_AFFILIATE_URL = "";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("api down")));
+
+    const product = await fetchFanzaProduct("熟女", "2026-04-07-item1");
+    expect(product.affiliateUrlMonthly).not.toBe("");
+    expect(product.affiliateUrlMonthly).toContain("dmm.co.jp");
   });
 });

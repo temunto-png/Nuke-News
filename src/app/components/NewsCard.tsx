@@ -50,22 +50,35 @@ export function NewsCard({ item, date }: NewsCardProps) {
         </p>
 
         <div className="mt-5 grid gap-3">
-          <a
-            href={item.product.affiliateUrlSingle}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-red-700"
-          >
-            FANZAで確認する
-          </a>
-          <a
-            href={item.product.affiliateUrlMonthly}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block rounded-2xl bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-amber-300"
-          >
-            月額で見放題にする
-          </a>
+          {item.product.isFallback ? (
+            <a
+              href={item.product.affiliateUrlMonthly}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-red-700"
+            >
+              今日の作品を探す →
+            </a>
+          ) : (
+            <>
+              <a
+                href={item.product.affiliateUrlSingle}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-bold text-white transition hover:bg-red-700"
+              >
+                作品を見る →
+              </a>
+              <a
+                href={item.product.affiliateUrlMonthly}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-2xl bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-amber-300"
+              >
+                月額プランで全部見放題にする
+              </a>
+            </>
+          )}
           <a
             href={tweetUrl}
             target="_blank"

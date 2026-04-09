@@ -8,39 +8,54 @@ function cleanText(value: string | undefined): string {
   return (value ?? "").replace(/\s+/g, " ").trim();
 }
 
-function inferGenreKeyword(article: RawArticle): string {
+const FALLBACK_GENRES = [
+  "人妻",
+  "OL",
+  "ギャル",
+  "お姉さん",
+  "制服",
+  "熟女",
+  "巨乳",
+];
+
+function inferGenreKeyword(article: RawArticle, index: number): string {
   const source = `${article.title} ${article.description}`;
 
-  if (/AI|技術|ロボット|半導体|研究/i.test(source)) {
-    return "未来 ロボット";
-  }
+  if (/AI|技術|ロボット|半導体|研究/i.test(source)) return "未来 ロボット";
+  if (/首相|内閣|大臣|政治|選挙|国会/.test(source)) return "女上司 支配";
+  if (/野球|サッカー|優勝|引退|移籍|監督/.test(source)) return "アスリート";
+  if (/物価|経済|円安|金利|株価|日銀/.test(source)) return "熟女";
+  if (/事件|逮捕|不祥事|流出|謝罪/.test(source)) return "背徳";
 
-  if (/首相|内閣|大臣|政治|選挙|国会/.test(source)) {
-    return "女上司 支配";
-  }
-
-  if (/野球|サッカー|優勝|引退|移籍|監督/.test(source)) {
-    return "アスリート";
-  }
-
-  if (/物価|経済|円安|金利|株価|日銀/.test(source)) {
-    return "熟女";
-  }
-
-  if (/事件|逮捕|不祥事|流出|謝罪/.test(source)) {
-    return "背徳";
-  }
-
-  return "人妻";
+  // デフォルト: ローテーションでジャンル多様性を確保
+  return FALLBACK_GENRES[index % FALLBACK_GENRES.length];
 }
 
+const REASON_TEMPLATES: Array<(title: string, genre: string) => string> = [
+  (title, genre) =>
+    `「${title}」というニュースが${genre}に繋がる理由、考えれば考えるほど笑える。`,
+  (title, genre) =>
+    `担当AIが「${title}」を読んで最初に思い浮かべたのが${genre}だったらしい。`,
+  (title, genre) =>
+    `「${title}」のどこかに${genre}の匂いがするという。AIに聞いてもはぐらかされた。`,
+  (title, genre) =>
+    `「${title}」から${genre}を連想するのはどういう回路なのか、本人（AI）も説明できない。`,
+  (title, genre) =>
+    `世の中が「${title}」で動いている間も、AIは${genre}のことを考えていた。`,
+];
+
 function buildFallbackItems(articles: RawArticle[]): AiSelectedItem[] {
-  return articles.slice(0, TARGET_ITEMS).map((article) => ({
-    newsTitle: cleanText(article.title),
-    genreKeyword: inferGenreKeyword(article),
-    reason: "ニュースの空気感とキーワードのズレがいちばん笑える組み合わせになるように選定した。",
-    shareText: `「${cleanText(article.title)}」から何が出てくるのか、たぶん予想できない。`,
-  }));
+  return articles.slice(0, TARGET_ITEMS).map((article, index) => {
+    const genre = inferGenreKeyword(article, index);
+    const title = cleanText(article.title);
+    const template = REASON_TEMPLATES[index % REASON_TEMPLATES.length];
+    return {
+      newsTitle: title,
+      genreKeyword: genre,
+      reason: template(title, genre),
+      shareText: `「${title}」から何が出てくるのか、たぶん予想できない。`,
+    };
+  });
 }
 
 function buildPrompt(articles: RawArticle[]): string {
@@ -55,6 +70,7 @@ function buildPrompt(articles: RawArticle[]): string {
 - genreKeyword は FANZA で検索しやすい日本語キーワードを1〜2語にする
 - reason は自然な日本語で1〜2文、やや笑えるトーンにする
 - shareText には作品名もジャンル名も入れない
+- できるだけ異なる genreKeyword を使うこと（ただし検索ヒット率を優先）
 
 ニュース記事リスト:
 ${articleList}`;
