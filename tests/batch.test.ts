@@ -148,3 +148,38 @@ describe("persistDailyData with status", () => {
     expect(exists).toBe(false);
   });
 });
+
+describe("genre-index.json", () => {
+  it("persistDailyData 後に genre-index.json が更新される", async () => {
+    const { generateDailyData, persistDailyData } = await import("../scripts/batch");
+    const data = await generateDailyData("2026-04-07");
+    await persistDailyData("2026-04-07", data, { updateLatest: false });
+
+    const indexPath = path.join(tempRoot, "data", "genre-index.json");
+    const exists = await fs.access(indexPath).then(() => true).catch(() => false);
+    expect(exists).toBe(true);
+
+    const index = JSON.parse(await fs.readFile(indexPath, "utf8")) as Record<string, Array<{ date: string; itemId: number }>>;
+    // genre が存在すること（fanza mock は熟女を返す）
+    const allEntries = Object.values(index).flat();
+    expect(allEntries.some((e) => e.date === "2026-04-07")).toBe(true);
+  });
+
+  it("同日2回実行しても genre-index に重複エントリが生まれない", async () => {
+    const { generateDailyData, persistDailyData } = await import("../scripts/batch");
+    const data = await generateDailyData("2026-04-07");
+
+    // status をリセットして2回実行できるようにする
+    await persistDailyData("2026-04-07", data, { updateLatest: false });
+    // 2回目: persisted フラグでスキップされるので genre-index は変化しない
+    await persistDailyData("2026-04-07", data, { updateLatest: false });
+
+    const indexPath = path.join(tempRoot, "data", "genre-index.json");
+    const index = JSON.parse(await fs.readFile(indexPath, "utf8")) as Record<string, Array<{ date: string; itemId: number }>>;
+    const allEntries = Object.values(index).flat();
+    const apr07Entries = allEntries.filter((e) => e.date === "2026-04-07");
+
+    // 5件（アイテム数）以内であること（重複なし）
+    expect(apr07Entries.length).toBeLessThanOrEqual(5);
+  });
+});

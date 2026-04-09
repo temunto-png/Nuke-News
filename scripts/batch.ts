@@ -53,6 +53,28 @@ export async function writeStatus(status: StatusMap): Promise<void> {
   );
 }
 
+async function updateGenreIndex(date: string, items: DailyItem[]): Promise<void> {
+  const indexPath = path.join(process.cwd(), "data", "genre-index.json");
+  let index: Record<string, Array<{ date: string; itemId: number }>> = {};
+
+  try {
+    const raw = await fs.readFile(indexPath, "utf8");
+    index = JSON.parse(raw) as typeof index;
+  } catch {
+    // 存在しない場合は空から開始
+  }
+
+  for (const item of items) {
+    const genre = item.genre;
+    if (!index[genre]) index[genre] = [];
+    // 同日・同アイテムの重複を除去してから先頭に追加
+    index[genre] = index[genre].filter((e) => !(e.date === date && e.itemId === item.id));
+    index[genre].unshift({ date, itemId: item.id });
+  }
+
+  await fs.writeFile(indexPath, JSON.stringify(index, null, 2), "utf8");
+}
+
 function isEnvFlagEnabled(name: string): boolean {
   const value = process.env[name]?.trim().toLowerCase();
   return value === "1" || value === "true" || value === "yes";
@@ -102,6 +124,8 @@ export async function persistDailyData(
   if (options.updateLatest) {
     await writeJson(path.join(dataDir, "latest.json"), data);
   }
+
+  await updateGenreIndex(date, data.items);
 
   const updated: StatusMap = {
     ...status,

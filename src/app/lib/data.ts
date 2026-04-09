@@ -48,3 +48,25 @@ export function loadLatestData(): DailyData | null {
   const newestDate = listAvailableDates()[0];
   return newestDate ? loadDailyData(newestDate) : null;
 }
+
+export type GenreIndex = Record<string, Array<{ date: string; itemId: number }>>;
+
+export function readGenreIndex(): GenreIndex {
+  const indexPath = path.join(DATA_DIR, "genre-index.json");
+  if (!fs.existsSync(indexPath)) return {};
+  try {
+    const raw = fs.readFileSync(indexPath, "utf8");
+    return JSON.parse(raw) as GenreIndex;
+  } catch {
+    return {};
+  }
+}
+
+export function listDatesByGenre(genre: string): Array<{ date: string; itemId: number }> {
+  const index = readGenreIndex();
+  return index[genre] ?? [];
+}
+
+export function listAllGenres(): string[] {
+  return Object.keys(readGenreIndex());
+}
