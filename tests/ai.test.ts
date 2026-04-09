@@ -137,7 +137,8 @@ describe("selectAndGenerateItems", () => {
 
     // 各 reason が対応するニュースタイトルを含むこと
     for (const item of result) {
-      expect(item.reason).toContain(item.newsTitle.slice(0, 5));
+      // タイトルを reason 内に含むこと（REASON_TEMPLATES は全て ${title} を埋め込む）
+      expect(item.reason).toContain(item.newsTitle);
     }
   });
 
@@ -158,5 +159,21 @@ describe("selectAndGenerateItems", () => {
 
     // 同一ジャンルが5件全部になることはない
     expect(Math.max(...Object.values(genreCounts))).toBeLessThan(5);
+  });
+
+  it("フォールバック shareText にジャンル名・作品名が含まれない", async () => {
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      messages: {
+        create: vi.fn().mockRejectedValue(new Error("API down")),
+      },
+    }));
+
+    const result = await selectAndGenerateItems(mockArticles);
+
+    for (const item of result) {
+      // genreKeyword がそのまま shareText に含まれていないこと
+      expect(item.shareText).not.toContain(item.genreKeyword);
+    }
   });
 });
