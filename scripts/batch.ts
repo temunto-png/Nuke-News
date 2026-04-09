@@ -26,7 +26,10 @@ function isEnvFlagEnabled(name: string): boolean {
   return value === "1" || value === "true" || value === "yes";
 }
 
-export async function runBatch(date = getJstDateString()): Promise<DailyData> {
+// ────────────────────────────────────────────────────────────
+// 1. 生成: RSS + AI + FANZA → DailyData（ファイルI/Oなし）
+// ────────────────────────────────────────────────────────────
+export async function generateDailyData(date: string): Promise<DailyData> {
   const articles = await fetchArticles();
   const selected = await selectAndGenerateItems(articles);
 
@@ -34,7 +37,6 @@ export async function runBatch(date = getJstDateString()): Promise<DailyData> {
     selected.map(async (entry, index) => {
       const campaign = `${date}-item${index + 1}`;
       const product = await fetchFanzaProduct(entry.genreKeyword, campaign);
-
       return {
         id: index + 1,
         newsTitle: entry.newsTitle,
@@ -46,42 +48,68 @@ export async function runBatch(date = getJstDateString()): Promise<DailyData> {
     }),
   );
 
-  const data: DailyData = { date, items };
+  return { date, items };
+}
+
+// ────────────────────────────────────────────────────────────
+// 2. 保存: date.json・latest.json を書き出す
+// ────────────────────────────────────────────────────────────
+export async function persistDailyData(
+  date: string,
+  data: DailyData,
+  options: { updateLatest: boolean },
+): Promise<void> {
   const dataDir = path.join(process.cwd(), "data");
-
   await writeJson(path.join(dataDir, `${date}.json`), data);
-  await writeJson(path.join(dataDir, "latest.json"), data);
+  if (options.updateLatest) {
+    await writeJson(path.join(dataDir, "latest.json"), data);
+  }
+}
 
+// ────────────────────────────────────────────────────────────
+// 3. 発火: deploy + tweet（SKIP フラグに従う）
+// ────────────────────────────────────────────────────────────
+export async function publishDailyData(date: string, data: DailyData): Promise<void> {
   const sideEffectEntries = [
     !isEnvFlagEnabled("SKIP_DEPLOY_HOOK") ? { name: "deploy", run: () => triggerDeploy() } : null,
     !isEnvFlagEnabled("SKIP_TWEET") ? { name: "twitter", run: () => postDailyTweet(data) } : null,
   ].filter((entry): entry is { name: string; run: () => Promise<void> } => entry !== null);
 
-  if (sideEffectEntries.length === 0) {
-    return data;
-  }
+  if (sideEffectEntries.length === 0) return;
 
-  const sideEffects = await Promise.allSettled(sideEffectEntries.map((entry) => entry.run()));
-  const failures = sideEffects.filter((result) => result.status === "rejected");
+  const results = await Promise.allSettled(sideEffectEntries.map((e) => e.run()));
+  const failures = results.filter((r) => r.status === "rejected");
 
-  for (const [i, result] of sideEffects.entries()) {
+  for (const [i, result] of results.entries()) {
     if (result.status === "rejected") {
-      console.warn(`Side effect [${sideEffectEntries[i].name}] failed:`, (result as PromiseRejectedResult).reason);
+      console.warn(
+        `Side effect [${sideEffectEntries[i].name}] failed for ${date}:`,
+        (result as PromiseRejectedResult).reason,
+      );
     }
   }
 
-  if (failures.length === sideEffects.length) {
+  if (failures.length === results.length) {
     throw new Error(
-      `Batch side effect failed: ${failures
-        .map((result) => String((result as PromiseRejectedResult).reason))
+      `All publish side effects failed: ${failures
+        .map((r) => String((r as PromiseRejectedResult).reason))
         .join("; ")}`,
     );
   }
+}
 
+// ────────────────────────────────────────────────────────────
+// エントリーポイント: 日次バッチ（generate + persist + publish）
+// ────────────────────────────────────────────────────────────
+export async function runBatch(date = getJstDateString()): Promise<DailyData> {
+  const data = await generateDailyData(date);
+  await persistDailyData(date, data, { updateLatest: true });
+  await publishDailyData(date, data);
   return data;
 }
 
-const isDirectExecution = process.argv[1] && path.resolve(process.argv[1]).endsWith(path.join("scripts", "batch.ts"));
+const isDirectExecution =
+  process.argv[1] && path.resolve(process.argv[1]).endsWith(path.join("scripts", "batch.ts"));
 
 if (isDirectExecution) {
   runBatch()

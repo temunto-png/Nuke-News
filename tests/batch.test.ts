@@ -1,9 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../scripts/rss", () => ({
-  fetchArticles: vi.fn().mockResolvedValue([{ title: "ニュース", description: "概要", link: "https://example.com" }]),
+  fetchArticles: vi.fn().mockResolvedValue([
+    { title: "ニュース", description: "概要", link: "https://example.com" },
+  ]),
 }));
 
 vi.mock("../scripts/ai", () => ({
@@ -29,31 +31,83 @@ vi.mock("../scripts/tweet-api", () => ({
   postDailyTweet: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe("runBatch", () => {
-  const tempRoot = path.join(process.cwd(), ".tmp-batch-test");
-  const originalCwd = process.cwd();
+const tempRoot = path.join(process.cwd(), ".tmp-batch-test");
+const originalCwd = process.cwd();
 
-  afterEach(async () => {
-    process.chdir(originalCwd);
-    await fs.rm(tempRoot, { recursive: true, force: true });
+beforeEach(async () => {
+  await fs.mkdir(tempRoot, { recursive: true });
+  process.chdir(tempRoot);
+  vi.resetModules();
+});
+
+afterEach(async () => {
+  process.chdir(originalCwd);
+  await fs.rm(tempRoot, { recursive: true, force: true });
+});
+
+describe("generateDailyData", () => {
+  it("DailyData を返す（ファイル書き込みなし）", async () => {
+    const { generateDailyData } = await import("../scripts/batch");
+    const result = await generateDailyData("2026-04-07");
+
+    expect(result.date).toBe("2026-04-07");
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].newsTitle).toBe("ニュース");
+
+    // ファイルが書かれていないことを確認
+    const exists = await fs
+      .access(path.join(tempRoot, "data", "2026-04-07.json"))
+      .then(() => true)
+      .catch(() => false);
+    expect(exists).toBe(false);
+  });
+});
+
+describe("persistDailyData", () => {
+  it("date.json と latest.json を書き出す (updateLatest: true)", async () => {
+    const { generateDailyData, persistDailyData } = await import("../scripts/batch");
+    const data = await generateDailyData("2026-04-07");
+    await persistDailyData("2026-04-07", data, { updateLatest: true });
+
+    const daily = JSON.parse(
+      await fs.readFile(path.join(tempRoot, "data", "2026-04-07.json"), "utf8"),
+    ) as { date: string };
+    const latest = JSON.parse(
+      await fs.readFile(path.join(tempRoot, "data", "latest.json"), "utf8"),
+    ) as { date: string };
+
+    expect(daily.date).toBe("2026-04-07");
+    expect(latest.date).toBe("2026-04-07");
   });
 
-  it("日付JSONとlatest.jsonを書き出す", async () => {
-    await fs.mkdir(tempRoot, { recursive: true });
-    process.chdir(tempRoot);
+  it("latest.json を更新しない (updateLatest: false)", async () => {
+    const { generateDailyData, persistDailyData } = await import("../scripts/batch");
+    const data = await generateDailyData("2026-04-07");
+    await persistDailyData("2026-04-07", data, { updateLatest: false });
 
+    const daily = JSON.parse(
+      await fs.readFile(path.join(tempRoot, "data", "2026-04-07.json"), "utf8"),
+    ) as { date: string };
+    const latestExists = await fs
+      .access(path.join(tempRoot, "data", "latest.json"))
+      .then(() => true)
+      .catch(() => false);
+
+    expect(daily.date).toBe("2026-04-07");
+    expect(latestExists).toBe(false);
+  });
+});
+
+describe("runBatch", () => {
+  it("generate + persist + publish を順に実行して DailyData を返す", async () => {
     const { runBatch } = await import("../scripts/batch");
     const result = await runBatch("2026-04-07");
 
-    const dailyJson = JSON.parse(
-      await fs.readFile(path.join(tempRoot, "data", "2026-04-07.json"), "utf8"),
-    ) as { date: string; items: Array<{ newsTitle: string }> };
-    const latestJson = JSON.parse(
-      await fs.readFile(path.join(tempRoot, "data", "latest.json"), "utf8"),
-    ) as { date: string; items: Array<{ newsTitle: string }> };
-
     expect(result.date).toBe("2026-04-07");
-    expect(dailyJson.items[0].newsTitle).toBe("ニュース");
-    expect(latestJson.items[0].newsTitle).toBe("ニュース");
+
+    const latest = JSON.parse(
+      await fs.readFile(path.join(tempRoot, "data", "latest.json"), "utf8"),
+    ) as { date: string };
+    expect(latest.date).toBe("2026-04-07");
   });
 });
