@@ -8,14 +8,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const data = loadLatestData();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nukenews.vercel.app";
   const date = data?.date ?? new Date().toISOString().slice(0, 10);
-  const firstTitle = data?.items[0]?.newsTitle ?? "今日のニュース";
 
   return {
-    title: `「${firstTitle}」で抜く - せっかくだから俺はこのニュースで抜くぜ`,
-    description: data?.items[0]?.reason ?? "今日のニュースをAVジャンルに変換しました。",
+    title: "せっかくだから俺はこのニュースで抜くぜ",
+    description: "今日のニュース5本が、AIによって全く別のジャンルに変換されました。答えはサイトで。",
     openGraph: {
       title: "せっかくだから俺はこのニュースで抜くぜ",
-      description: "今日のニュースがどのジャンルになるか、見てからのお楽しみ。",
+      description: "今日のニュース5本が、AIによって全く別のジャンルに変換されました。答えはサイトで。",
       url: siteUrl,
       images: [{ url: `${siteUrl}/api/og?date=${date}&id=1` }],
     },

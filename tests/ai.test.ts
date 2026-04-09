@@ -119,4 +119,44 @@ describe("selectAndGenerateItems", () => {
     expect(result).toHaveLength(5);
     expect(result.some((item) => item.newsTitle === "存在しないニュース")).toBe(false);
   });
+
+  it("フォールバック reason は記事タイトルを含む異なる文言になる", async () => {
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      messages: {
+        create: vi.fn().mockRejectedValue(new Error("API down")),
+      },
+    }));
+
+    const result = await selectAndGenerateItems(mockArticles);
+
+    // 全 reason が異なること
+    const reasons = result.map((item) => item.reason);
+    const uniqueReasons = new Set(reasons);
+    expect(uniqueReasons.size).toBe(reasons.length);
+
+    // 各 reason が対応するニュースタイトルを含むこと
+    for (const item of result) {
+      expect(item.reason).toContain(item.newsTitle.slice(0, 5));
+    }
+  });
+
+  it("フォールバック genreKeyword は最大3種類まで重複する", async () => {
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      messages: {
+        create: vi.fn().mockRejectedValue(new Error("API down")),
+      },
+    }));
+
+    const result = await selectAndGenerateItems(mockArticles);
+    const genres = result.map((item) => item.genreKeyword);
+    const genreCounts = genres.reduce<Record<string, number>>((acc, g) => {
+      acc[g] = (acc[g] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    // 同一ジャンルが5件全部になることはない
+    expect(Math.max(...Object.values(genreCounts))).toBeLessThan(5);
+  });
 });

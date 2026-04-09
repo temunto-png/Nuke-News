@@ -66,12 +66,31 @@ export async function GET(request: NextRequest) {
             zIndex: 1,
           }}
         >
-          <div style={{ fontSize: 26, opacity: 0.72 }}>NUKE NEWS</div>
-          <div style={{ marginTop: 20, fontSize: 58, fontWeight: 700, lineHeight: 1.28 }}>
-            {item?.newsTitle ?? "せっかくだから俺はこのニュースで抜くぜ"}
+          <div style={{ fontSize: 22, opacity: 0.65, letterSpacing: "0.15em" }}>NUKE NEWS</div>
+          <div
+            style={{
+              marginTop: 16,
+              fontSize: 40,
+              fontWeight: 700,
+              lineHeight: 1.4,
+              color: "#f1f5f9",
+            }}
+          >
+            {item?.newsTitle ?? "今日のニュースがジャンルに変換されました"}
           </div>
-          <div style={{ marginTop: 28, fontSize: 24, color: "#fecaca" }}>
-            せっかくだから俺はこのニュースで抜くぜ
+          <div
+            style={{
+              marginTop: 24,
+              fontSize: 88,
+              fontWeight: 900,
+              color: "#ef4444",
+              letterSpacing: "0.1em",
+            }}
+          >
+            ???
+          </div>
+          <div style={{ marginTop: 20, fontSize: 22, color: "#94a3b8" }}>
+            答えはサイトで
           </div>
         </div>
       </div>
