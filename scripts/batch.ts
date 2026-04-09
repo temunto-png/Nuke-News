@@ -142,15 +142,25 @@ export async function persistDailyData(
 }
 
 // ────────────────────────────────────────────────────────────
-// 3. 発火: deploy + tweet（SKIP フラグに従う）
+// 3. 発火: deploy + tweet（SKIP フラグ・実行済みフラグに従う）
 // ────────────────────────────────────────────────────────────
 export async function publishDailyData(date: string, data: DailyData): Promise<void> {
+  const status = await readStatus();
+  const dateStatus = status[date];
+
   const sideEffectEntries = [
-    !isEnvFlagEnabled("SKIP_DEPLOY_HOOK") ? { name: "deploy", run: () => triggerDeploy() } : null,
-    !isEnvFlagEnabled("SKIP_TWEET") ? { name: "twitter", run: () => postDailyTweet(data) } : null,
+    !isEnvFlagEnabled("SKIP_DEPLOY_HOOK") && !dateStatus?.deployed
+      ? { name: "deploy", run: () => triggerDeploy() }
+      : null,
+    !isEnvFlagEnabled("SKIP_TWEET") && !dateStatus?.tweeted
+      ? { name: "twitter", run: () => postDailyTweet(data) }
+      : null,
   ].filter((entry): entry is { name: string; run: () => Promise<void> } => entry !== null);
 
-  if (sideEffectEntries.length === 0) return;
+  if (sideEffectEntries.length === 0) {
+    console.log(`publishDailyData: all side effects already done for ${date}`);
+    return;
+  }
 
   const results = await Promise.allSettled(sideEffectEntries.map((e) => e.run()));
   const failures = results.filter((r) => r.status === "rejected");
@@ -163,6 +173,21 @@ export async function publishDailyData(date: string, data: DailyData): Promise<v
       );
     }
   }
+
+  // 成功した side effect のステータスを更新
+  const updatedDateStatus: DateStatus = {
+    generated: dateStatus?.generated ?? false,
+    persisted: dateStatus?.persisted ?? false,
+    deployed: dateStatus?.deployed ?? false,
+    tweeted: dateStatus?.tweeted ?? false,
+  };
+  for (const [i, result] of results.entries()) {
+    if (result.status === "fulfilled") {
+      if (sideEffectEntries[i].name === "deploy") updatedDateStatus.deployed = true;
+      if (sideEffectEntries[i].name === "twitter") updatedDateStatus.tweeted = true;
+    }
+  }
+  await writeStatus({ ...status, [date]: updatedDateStatus });
 
   if (failures.length === results.length) {
     throw new Error(
@@ -177,8 +202,27 @@ export async function publishDailyData(date: string, data: DailyData): Promise<v
 // エントリーポイント: 日次バッチ（generate + persist + publish）
 // ────────────────────────────────────────────────────────────
 export async function runBatch(date = getJstDateString()): Promise<DailyData> {
-  const data = await generateDailyData(date);
-  await persistDailyData(date, data, { updateLatest: true });
+  const status = await readStatus();
+  let data: DailyData;
+
+  if (status[date]?.persisted) {
+    // 同日再実行時は生成をスキップしてファイルから読み込む
+    const filePath = path.join(process.cwd(), "data", `${date}.json`);
+    const raw = await fs.readFile(filePath, "utf8");
+    data = JSON.parse(raw) as DailyData;
+    console.log(`runBatch: ${date} already persisted, skipping generation`);
+  } else {
+    data = await generateDailyData(date);
+
+    if (data.items.length < 5) {
+      throw new Error(
+        `5件生成できませんでした (${data.items.length}件) — 公開を中止します`,
+      );
+    }
+
+    await persistDailyData(date, data, { updateLatest: true });
+  }
+
   await publishDailyData(date, data);
   return data;
 }

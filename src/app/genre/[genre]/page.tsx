@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Header } from "../../components/Header";
+import { getJstDateString } from "../../lib/date";
 import { listAllGenres, listDatesByGenre, loadDailyData } from "../../lib/data";
 
 interface Props {
@@ -37,7 +38,7 @@ export default async function GenrePage({ params }: Props) {
 
   return (
     <main className="min-h-screen">
-      <Header date={new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)} />
+      <Header date={getJstDateString()} />
       <div className="mx-auto max-w-lg px-4 py-8">
         <h1 className="text-xl font-bold text-slate-900">
           ジャンル:{" "}

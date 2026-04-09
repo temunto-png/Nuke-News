@@ -2,12 +2,13 @@
 import { ArchiveList } from "./components/ArchiveList";
 import { Header } from "./components/Header";
 import { NewsCard } from "./components/NewsCard";
+import { getJstDateString } from "./lib/date";
 import { listAvailableDates, loadLatestData } from "./lib/data";
 
 export async function generateMetadata(): Promise<Metadata> {
   const data = loadLatestData();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nukenews.vercel.app";
-  const date = data?.date ?? new Date().toISOString().slice(0, 10);
+  const date = data?.date ?? getJstDateString();
 
   return {
     title: "せっかくだから俺はこのニュースで抜くぜ",
@@ -27,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function HomePage() {
   const data = loadLatestData();
-  const today = data?.date ?? new Date().toISOString().slice(0, 10);
+  const today = data?.date ?? getJstDateString();
   const dates = listAvailableDates();
 
   return (

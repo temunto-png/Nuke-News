@@ -9,9 +9,14 @@ vi.mock("../scripts/rss", () => ({
 }));
 
 vi.mock("../scripts/ai", () => ({
-  selectAndGenerateItems: vi.fn().mockResolvedValue([
-    { newsTitle: "ニュース", genreKeyword: "熟女", reason: "理由", shareText: "シェア文" },
-  ]),
+  selectAndGenerateItems: vi.fn().mockResolvedValue(
+    Array.from({ length: 5 }, (_, i) => ({
+      newsTitle: `ニュース${i + 1}`,
+      genreKeyword: "熟女",
+      reason: "理由",
+      shareText: "シェア文",
+    })),
+  ),
 }));
 
 vi.mock("../scripts/fanza", () => ({
@@ -51,8 +56,8 @@ describe("generateDailyData", () => {
     const result = await generateDailyData("2026-04-07");
 
     expect(result.date).toBe("2026-04-07");
-    expect(result.items).toHaveLength(1);
-    expect(result.items[0].newsTitle).toBe("ニュース");
+    expect(result.items).toHaveLength(5);
+    expect(result.items[0].newsTitle).toBe("ニュース1");
 
     // ファイルが書かれていないことを確認
     const exists = await fs
