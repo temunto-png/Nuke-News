@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "batch": "tsx scripts/batch.ts",
+    "seed": "tsx scripts/seed.ts",
     "tweet": "tsx scripts/post-latest-tweet.ts",
     "wait:publish": "tsx scripts/wait-for-publication.ts",
     "typecheck": "next typegen && tsc --noEmit"

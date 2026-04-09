@@ -111,3 +111,40 @@ describe("runBatch", () => {
     expect(latest.date).toBe("2026-04-07");
   });
 });
+
+describe("readStatus / writeStatus", () => {
+  it("存在しない場合は空オブジェクトを返す", async () => {
+    const { readStatus } = await import("../scripts/batch");
+    const status = await readStatus();
+    expect(status).toEqual({});
+  });
+
+  it("writeStatus → readStatus で往復できる", async () => {
+    const { readStatus, writeStatus } = await import("../scripts/batch");
+    await writeStatus({
+      "2026-04-07": { generated: true, persisted: true, deployed: false, tweeted: false },
+    });
+    const loaded = await readStatus();
+    expect(loaded["2026-04-07"].persisted).toBe(true);
+    expect(loaded["2026-04-07"].tweeted).toBe(false);
+  });
+});
+
+describe("persistDailyData with status", () => {
+  it("persisted:true の日付はスキップされる", async () => {
+    const { generateDailyData, persistDailyData, writeStatus } = await import("../scripts/batch");
+    await writeStatus({
+      "2026-04-07": { generated: true, persisted: true, deployed: false, tweeted: false },
+    });
+
+    const data = await generateDailyData("2026-04-07");
+    await persistDailyData("2026-04-07", data, { updateLatest: false });
+
+    // スキップされたのでファイルが書かれないことを確認
+    const exists = await fs
+      .access(path.join(tempRoot, "data", "2026-04-07.json"))
+      .then(() => true)
+      .catch(() => false);
+    expect(exists).toBe(false);
+  });
+});

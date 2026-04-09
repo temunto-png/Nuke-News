@@ -21,6 +21,38 @@ async function writeJson(filePath: string, data: DailyData) {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
+// ────────────────────────────────────────────────────────────
+// status.json ユーティリティ
+// ────────────────────────────────────────────────────────────
+export interface DateStatus {
+  generated: boolean;
+  persisted: boolean;
+  deployed: boolean;
+  tweeted: boolean;
+}
+
+export type StatusMap = Record<string, DateStatus>;
+
+export async function readStatus(): Promise<StatusMap> {
+  const statusPath = path.join(process.cwd(), "data", "status.json");
+  try {
+    const raw = await fs.readFile(statusPath, "utf8");
+    return JSON.parse(raw) as StatusMap;
+  } catch {
+    return {};
+  }
+}
+
+export async function writeStatus(status: StatusMap): Promise<void> {
+  const dataDir = path.join(process.cwd(), "data");
+  await fs.mkdir(dataDir, { recursive: true });
+  await fs.writeFile(
+    path.join(dataDir, "status.json"),
+    JSON.stringify(status, null, 2),
+    "utf8",
+  );
+}
+
 function isEnvFlagEnabled(name: string): boolean {
   const value = process.env[name]?.trim().toLowerCase();
   return value === "1" || value === "true" || value === "yes";
@@ -59,11 +91,29 @@ export async function persistDailyData(
   data: DailyData,
   options: { updateLatest: boolean },
 ): Promise<void> {
+  const status = await readStatus();
+  if (status[date]?.persisted) {
+    console.log(`persistDailyData: skipping ${date} (already persisted)`);
+    return;
+  }
+
   const dataDir = path.join(process.cwd(), "data");
   await writeJson(path.join(dataDir, `${date}.json`), data);
   if (options.updateLatest) {
     await writeJson(path.join(dataDir, "latest.json"), data);
   }
+
+  const updated: StatusMap = {
+    ...status,
+    [date]: {
+      ...status[date],
+      generated: true,
+      persisted: true,
+      deployed: status[date]?.deployed ?? false,
+      tweeted: status[date]?.tweeted ?? false,
+    },
+  };
+  await writeStatus(updated);
 }
 
 // ────────────────────────────────────────────────────────────
