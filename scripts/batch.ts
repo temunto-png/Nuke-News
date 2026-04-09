@@ -72,6 +72,7 @@ async function updateGenreIndex(date: string, items: DailyItem[]): Promise<void>
     index[genre].unshift({ date, itemId: item.id });
   }
 
+  await fs.mkdir(path.dirname(indexPath), { recursive: true });
   await fs.writeFile(indexPath, JSON.stringify(index, null, 2), "utf8");
 }
 

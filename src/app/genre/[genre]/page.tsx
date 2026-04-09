@@ -37,7 +37,7 @@ export default async function GenrePage({ params }: Props) {
 
   return (
     <main className="min-h-screen">
-      <Header date={new Date().toISOString().slice(0, 10)} />
+      <Header date={new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)} />
       <div className="mx-auto max-w-lg px-4 py-8">
         <h1 className="text-xl font-bold text-slate-900">
           ジャンル:{" "}
