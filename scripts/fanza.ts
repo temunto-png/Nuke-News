@@ -52,13 +52,18 @@ function normaliseItem(item: { iteminfo?: FanzaApiItem } | FanzaApiItem): FanzaA
 }
 
 function getFallbackProduct(genreKeyword: string, campaign: string): FanzaProduct {
-  const defaultUrl = process.env.FANZA_MONTHLY_AFFILIATE_URL ?? "https://www.dmm.co.jp/digital/videoa/";
+  const rawUrl = process.env.FANZA_MONTHLY_AFFILIATE_URL?.trim();
+  const defaultUrl =
+    rawUrl && rawUrl.length > 0
+      ? rawUrl
+      : "https://www.dmm.co.jp/digital/videoa/-/list/=/";
 
   return {
     title: `${genreKeyword} のおすすめ作品`,
     thumbnailUrl: FALLBACK_THUMBNAIL,
     affiliateUrlSingle: appendTrackingParams(defaultUrl, campaign, "single"),
     affiliateUrlMonthly: appendTrackingParams(defaultUrl, campaign, "monthly"),
+    isFallback: true,
   };
 }
 
@@ -121,6 +126,7 @@ export async function fetchFanzaProduct(
       })(),
       affiliateUrlSingle: appendTrackingParams(picked.affiliateURL, campaign, "single"),
       affiliateUrlMonthly: appendTrackingParams(monthlyBase, campaign, "monthly"),
+      isFallback: false,
     };
   } catch (error) {
     console.warn(`FANZA lookup failed for keyword: ${genreKeyword}`, error);
