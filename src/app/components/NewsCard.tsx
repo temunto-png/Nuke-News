@@ -27,11 +27,26 @@ export function NewsCard({ item, date }: NewsCardProps) {
       id={`item-${item.id}`}
       className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.55)]"
     >
+      {/* ヘッダー：ニュースタイトル */}
       <div className="border-b border-slate-100 bg-gradient-to-r from-red-50 via-white to-amber-50 px-5 py-4">
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-red-500">#{item.id}</p>
         <h2 className="mt-2 text-lg font-bold leading-snug text-slate-950">{item.newsTitle}</h2>
       </div>
 
+      {/* 変換セクション：区切り帯 → reason → genreバッジ */}
+      <div className="border-b border-slate-100">
+        <div className="border-b border-slate-100 bg-slate-50 px-5 py-3">
+          <p className="text-xs font-semibold tracking-wider text-slate-600">🤖 AIが変換すると…</p>
+        </div>
+        <div className="px-5 py-4">
+          <p className="text-base font-bold leading-relaxed text-slate-800">{item.reason}</p>
+          <p className="mt-4 block w-full rounded-2xl bg-red-600 py-3 text-center text-sm font-bold text-white">
+            変換結果：{item.genre}
+          </p>
+        </div>
+      </div>
+
+      {/* 作品セクション：サムネイル + タイトル + CTA */}
       <div className="p-5">
         <div className="relative aspect-video overflow-hidden rounded-2xl bg-slate-100">
           <Image
@@ -44,10 +59,6 @@ export function NewsCard({ item, date }: NewsCardProps) {
         </div>
 
         <p className="mt-4 text-sm font-bold text-slate-900">{item.product.title}</p>
-        <p className="mt-2 text-sm leading-7 text-slate-600">{item.reason}</p>
-        <p className="mt-3 inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">
-          {item.genre}
-        </p>
 
         <div className="mt-5 grid gap-3">
           {item.product.isFallback ? (

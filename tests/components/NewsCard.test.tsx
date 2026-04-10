@@ -75,4 +75,14 @@ describe("NewsCard", () => {
       "twitter.com/intent/tweet",
     );
   });
+
+  it("変換区切り帯を表示する", () => {
+    render(<NewsCard item={item} date="2026-04-07" />);
+    expect(screen.getByText(/AIが変換すると…/)).toBeInTheDocument();
+  });
+
+  it("変換結果バッジに '変換結果：{genre}' を表示する", () => {
+    render(<NewsCard item={item} date="2026-04-07" />);
+    expect(screen.getByText("変換結果：熟女")).toBeInTheDocument();
+  });
 });
