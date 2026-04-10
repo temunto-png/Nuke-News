@@ -142,7 +142,7 @@ describe("selectAndGenerateItems", () => {
     }
   });
 
-  it("フォールバック genreKeyword は最大3種類まで重複する", async () => {
+  it("フォールバック genreKeyword は5件すべて異なる", async () => {
     const Anthropic = (await import("@anthropic-ai/sdk")).default;
     (Anthropic as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
       messages: {
@@ -152,13 +152,9 @@ describe("selectAndGenerateItems", () => {
 
     const result = await selectAndGenerateItems(mockArticles);
     const genres = result.map((item) => item.genreKeyword);
-    const genreCounts = genres.reduce<Record<string, number>>((acc, g) => {
-      acc[g] = (acc[g] ?? 0) + 1;
-      return acc;
-    }, {});
+    const uniqueGenres = new Set(genres);
 
-    // 同一ジャンルが5件全部になることはない
-    expect(Math.max(...Object.values(genreCounts))).toBeLessThan(5);
+    expect(uniqueGenres.size).toBe(result.length);
   });
 
   it("フォールバック shareText にジャンル名・作品名が含まれない", async () => {

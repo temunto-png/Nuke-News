@@ -45,8 +45,17 @@ const REASON_TEMPLATES: Array<(title: string, genre: string) => string> = [
 ];
 
 function buildFallbackItems(articles: RawArticle[]): AiSelectedItem[] {
+  const usedGenres = new Set<string>();
+
   return articles.slice(0, TARGET_ITEMS).map((article, index) => {
-    const genre = inferGenreKeyword(article, index);
+    let genre = inferGenreKeyword(article, index);
+
+    if (usedGenres.has(genre)) {
+      const alternative = FALLBACK_GENRES.find((g) => !usedGenres.has(g));
+      if (alternative) genre = alternative;
+    }
+
+    usedGenres.add(genre);
     const title = cleanText(article.title);
     const template = REASON_TEMPLATES[index % REASON_TEMPLATES.length];
     return {
@@ -76,7 +85,7 @@ function buildPrompt(articles: RawArticle[]): string {
   - 良い例: 「首相が『追加放出』を宣言するとき、あの独特の上から目線がある。女上司がデスクを叩きながら『今すぐ出してきなさい』と言っている光景と完全に一致した。」
   - 悪い例: 「ニュースの空気感とキーワードのズレが笑える組み合わせになるように選定した。」← これは絶対禁止
 - shareText には作品名もジャンル名も入れない
-- できるだけ異なる genreKeyword を使うこと（ただし検索ヒット率を優先）
+- 5件の genreKeyword はすべて異なる単語を使うこと（重複禁止）
 
 ニュース記事リスト:
 ${articleList}`;
@@ -138,6 +147,7 @@ export async function selectAndGenerateItems(
     }
 
     const seenTitles = new Set<string>();
+    const seenGenres = new Set<string>();
     const validated = parsed.selected
       .map((item) => ({
         newsTitle: cleanText(item.newsTitle),
@@ -148,11 +158,12 @@ export async function selectAndGenerateItems(
       .filter((item) => item.newsTitle && knownTitles.has(item.newsTitle))
       .filter((item) => item.genreKeyword && item.reason && item.shareText)
       .filter((item) => {
-        if (seenTitles.has(item.newsTitle)) {
+        if (seenTitles.has(item.newsTitle) || seenGenres.has(item.genreKeyword)) {
           return false;
         }
 
         seenTitles.add(item.newsTitle);
+        seenGenres.add(item.genreKeyword);
         return true;
       });
 
