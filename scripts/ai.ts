@@ -33,15 +33,15 @@ function inferGenreKeyword(article: RawArticle, index: number): string {
 
 const REASON_TEMPLATES: Array<(title: string, genre: string) => string> = [
   (title, genre) =>
-    `「${title}」というニュースが${genre}に繋がる理由、考えれば考えるほど笑える。`,
+    `「${title}」を読んだとき、AIの頭の中で最初に浮かんだのが${genre}だった。その判断プロセスは今も解明されていない。`,
   (title, genre) =>
-    `担当AIが「${title}」を読んで最初に思い浮かべたのが${genre}だったらしい。`,
+    `世間が「${title}」に注目している間、AIは一貫して${genre}のことを考えていた。集中力がすごい。`,
   (title, genre) =>
-    `「${title}」のどこかに${genre}の匂いがするという。AIに聞いてもはぐらかされた。`,
+    `「${title}」と${genre}の間には、普通の人間には見えない何かがある。AIにはそれが見えた。`,
   (title, genre) =>
-    `「${title}」から${genre}を連想するのはどういう回路なのか、本人（AI）も説明できない。`,
+    `「${title}」から${genre}に至る経路、図にしたら面白いと思う。AIは一直線だったらしい。`,
   (title, genre) =>
-    `世の中が「${title}」で動いている間も、AIは${genre}のことを考えていた。`,
+    `「${title}」。このニュースを${genre}に変換したAIに、「なぜ？」と聞いたら黙った。`,
 ];
 
 function buildFallbackItems(articles: RawArticle[]): AiSelectedItem[] {
@@ -68,7 +68,13 @@ function buildPrompt(articles: RawArticle[]): string {
 ルール:
 - newsTitle はニュースタイトルの元の文言をそのまま使う
 - genreKeyword は FANZA で検索しやすい日本語キーワードを1〜2語にする
-- reason は自然な日本語で1〜2文、やや笑えるトーンにする
+- reason は「なぜこのニュースがこのジャンルに変換されたのか」をユーモラスに説明する1〜2文にする
+  - ニュースの具体的なキーワード・数字・状況を必ず拾うこと
+  - 接続の論理を読者が笑いながら納得できるように書くこと
+  - 「選定した」「空気感」「ズレ」など選定基準の説明は絶対に書かない
+  - 良い例: 「32時間だけ停戦というのはノリが軽すぎる。『てか今日だけ休戦しよ？』くらいのテンションで言ってると思う。それはギャルだ。」
+  - 良い例: 「首相が『追加放出』を宣言するとき、あの独特の上から目線がある。女上司がデスクを叩きながら『今すぐ出してきなさい』と言っている光景と完全に一致した。」
+  - 悪い例: 「ニュースの空気感とキーワードのズレが笑える組み合わせになるように選定した。」← これは絶対禁止
 - shareText には作品名もジャンル名も入れない
 - できるだけ異なる genreKeyword を使うこと（ただし検索ヒット率を優先）
 
