@@ -44,12 +44,12 @@ export default function AboutPage() {
         <p className="mt-2 text-sm leading-7 text-slate-600">
           X（旧Twitter）の{" "}
           <a
-            href={`https://twitter.com/${process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? "nukenews"}`}
+            href="https://twitter.com/testcas01383886"
             target="_blank"
             rel="noopener noreferrer"
             className="text-red-600 underline"
           >
-            @{process.env.NEXT_PUBLIC_TWITTER_HANDLE ?? "nukenews"}
+            @testcas01383886
           </a>{" "}
           までご連絡ください。
         </p>
